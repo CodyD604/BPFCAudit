@@ -4,8 +4,14 @@ import org.bpfcaudit.bpfcaudit.dal.ServiceRepository;
 import org.bpfcaudit.bpfcaudit.model.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.RepresentationModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import static com.toedter.spring.hateoas.jsonapi.MediaTypes.JSON_API_VALUE;
 
@@ -33,10 +39,22 @@ public class ServiceController {
     public ResponseEntity<EntityModel<Service>> newService(@RequestBody EntityModel<Service> serviceModel) {
         Service service = serviceModel.getContent();
         assert service != null;
-
         repository.save(service);
 
-        
-        return "stuff";
+        final RepresentationModel<?> serviceRepresentationModel = serviceAssembler.toJsonApiModel(service);
+
+        return serviceRepresentationModel
+                .getLink(IanaLinkRelations.SELF)
+                .map(Link::getHref)
+                .map(href -> {
+                    try {
+                        System.out.println(href);
+                        return new URI(href);
+                    } catch (URISyntaxException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .map(uri -> ResponseEntity.created(uri).body(serviceAssembler.toModel(service)))
+                .orElse(ResponseEntity.badRequest().build());
     }
 }
