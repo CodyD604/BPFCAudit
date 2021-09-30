@@ -7,7 +7,7 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 import org.asynchttpclient.ws.WebSocket;
 import org.asynchttpclient.ws.WebSocketListener;
-import org.bpfcaudit.bpfcaudit.dal.EventRepository;
+import org.bpfcaudit.bpfcaudit.dal.RuleRepository;
 import org.bpfcaudit.bpfcaudit.model.Rule;
 import org.bpfcaudit.bpfcaudit.model.pojo.Audit;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 @Component
 public class BPFCAuditAdapter implements WebSocketListener {
     @Autowired
-    public EventRepository repository;
+    public RuleRepository repository;
 
     private String subscriptionRequestId;
     private long subscriptionId;
