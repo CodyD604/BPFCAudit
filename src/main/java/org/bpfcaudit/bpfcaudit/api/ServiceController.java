@@ -36,7 +36,8 @@ public class ServiceController {
     @GetMapping("/" + ApiPath.V1 + "/" + SERVICES)
     public ResponseEntity<RepresentationModel<?>> findAll(
         @RequestParam(value = "page[number]", defaultValue = "0", required = false) int page,
-        @RequestParam(value = "page[size]", defaultValue = "25", required = false) int size
+        @RequestParam(value = "page[size]", defaultValue = "25", required = false) int size,
+        @RequestParam(value = "included", required = false) String[] included
     ) {
         final PageRequest pageRequest = PageRequest.of(page, size);
 
@@ -59,8 +60,13 @@ public class ServiceController {
 
         final JsonApiModelBuilder jsonApiModelBuilder = jsonApiModel().model(pagedModel);
 
-        for (Service service : pagedResult.getContent()) {
-            jsonApiModelBuilder.included(service.getCaptures());
+        if (included != null) {
+            List<String> includedList = Arrays.asList(included);
+            if (includedList.contains(CAPTURES)) {
+                for (Service service : pagedResult.getContent()) {
+                    jsonApiModelBuilder.included(service.getCaptures());
+                }
+            }
         }
 
         final RepresentationModel<?> jsonApiModel = jsonApiModelBuilder.build();
@@ -70,7 +76,7 @@ public class ServiceController {
 
     // TODO: includes for policy
     @GetMapping("/" + ApiPath.V1 + "/" + SERVICES + "/{id}")
-    public ResponseEntity<? extends  RepresentationModel<?>> findOne(
+    public ResponseEntity<? extends RepresentationModel<?>> findOne(
             @PathVariable Long id,
             @RequestParam(value = "included", required = false) String[] included
     ) {
