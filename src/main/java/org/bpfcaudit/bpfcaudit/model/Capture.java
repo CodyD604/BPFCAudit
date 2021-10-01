@@ -1,15 +1,16 @@
 package org.bpfcaudit.bpfcaudit.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.toedter.spring.hateoas.jsonapi.JsonApiRelationships;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.bpfcaudit.bpfcaudit.model.pojo.CaptureRO;
 
 import javax.persistence.*;
 
 @Data
+@NoArgsConstructor
 @Entity
 @Table(name = Capture.CAPTURES)
-@JsonIgnoreProperties
 public class Capture {
     public static final String CAPTURES = "captures";
 
@@ -18,11 +19,17 @@ public class Capture {
     private Long id;
     private CaptureStatus status;
     private String startTime;
-    @JsonProperty
     private String endTime;
+    @OneToOne(fetch = FetchType.EAGER)
+    @JsonApiRelationships("services")
+    @JoinColumn(name="service_id")
+    private Service service;
 
 
-    public Capture() {
-        status = CaptureStatus.IN_PROGRESS;
+    public Capture(CaptureRO captureRO, Service service) {
+        // TODO: start time, check that start time < end time
+        this.endTime = captureRO.getEndTime();
+        this.status = CaptureStatus.IN_PROGRESS;
+        this.service = service;
     }
 }

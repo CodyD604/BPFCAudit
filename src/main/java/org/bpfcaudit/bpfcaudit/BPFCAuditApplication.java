@@ -18,6 +18,7 @@ public class BPFCAuditApplication implements WebMvcConfigurer {
 
 	@Bean
 	public CommandLineRunner bpfcaudit(AuditWorker auditWorker) {
+		// TODO: delete captures with status IN_PROGRESS
 		return (args) -> {
 			auditWorker.run();
 		};
