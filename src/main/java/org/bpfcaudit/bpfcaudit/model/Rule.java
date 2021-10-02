@@ -1,37 +1,26 @@
 package org.bpfcaudit.bpfcaudit.model;
 
-import org.bpfcaudit.bpfcaudit.model.pojo.AuditEvent;
 import org.bpfcaudit.bpfcaudit.model.pojo.Result;
 
 import javax.persistence.*;
-import java.math.BigInteger;
 
 @Entity
 @Table(name = "rules")
 public class Rule {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    public long id;
-    @Transient
-    public BigInteger containerId;
+    public Long id;
     public String[] decision;
-    public long nsPid;
-    public long pid;
-    @Transient
-    public BigInteger policyId;
-    public String serviceName;
-    public String ruleName;
     public int policyLine;
+    public long count;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="audit_id")
+    private Audit audit;
 
-    public Rule(AuditEvent auditPOJO, String serviceName) {
-        Result result = auditPOJO.result;
-        this.containerId = result.containerId;
+    public Rule(Result result, long count, Audit audit) {
         this.decision = result.decision;
-        this.nsPid = result.nsPid;
-        this.pid = result.pid;
-        this.policyId = result.rule.policyId;
-        this.ruleName = result.rule.ruleName;
         this.policyLine = result.rule.lineNumber;
-        this.serviceName = serviceName;
+        this.count = count;
+        this.audit = audit;
     }
 }

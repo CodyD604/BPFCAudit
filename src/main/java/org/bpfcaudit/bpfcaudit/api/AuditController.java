@@ -29,6 +29,8 @@ public class AuditController {
     private AuditRepository auditRepository;
     @Autowired
     private AuditModelAssembler auditAssembler;
+    @Autowired
+    private AuditScheduler auditScheduler;
 
     @PostMapping("/" + ApiPath.V1 + "/" + AUDITS)
     public ResponseEntity<?> newAudit(
@@ -48,9 +50,16 @@ public class AuditController {
         } catch (Exception ex) {
             throw new JSONAPIException(HttpStatus.BAD_REQUEST, ex.getMessage());
         }
+
         auditRepository.save(audit);
 
-        AuditScheduler.InitiateAudit(audit);
+        try {
+            auditScheduler.InitiateAudit(audit);
+        } catch (Exception ex) {
+            // TODO: asnyc
+            auditRepository.delete(audit);
+            throw new JSONAPIException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
 
         final RepresentationModel<?> auditRepresentationModel = auditAssembler.toJsonApiModel(audit);
 

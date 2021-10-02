@@ -5,7 +5,6 @@ import com.toedter.spring.hateoas.jsonapi.JsonApiConfiguration;
 import com.toedter.spring.hateoas.jsonapi.JsonApiError;
 import com.toedter.spring.hateoas.jsonapi.JsonApiErrors;
 import org.bpfcaudit.bpfcaudit.api.jsonapi.JSONAPIException;
-import org.bpfcaudit.bpfcaudit.auditor.AuditWorker;
 import org.bpfcaudit.bpfcaudit.dal.AuditRepository;
 import org.bpfcaudit.bpfcaudit.model.Audit;
 import org.bpfcaudit.bpfcaudit.model.AuditStatus;
@@ -39,7 +38,7 @@ public class BPFCAuditApplication implements WebMvcConfigurer {
 
 			auditFuture.handle((List<Audit> audits, Throwable t) -> {
 				for (Audit audit : audits) {
-					audit.setFailure("Process terminated before audit completion.");
+					audit.complete(AuditStatus.FAILED,"Process terminated before audit completion.");
 				}
 				auditRepository.saveAll(audits);
 				return null;
