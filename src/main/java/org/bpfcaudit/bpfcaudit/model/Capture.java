@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.bpfcaudit.bpfcaudit.model.pojo.CaptureRO;
 
 import javax.persistence.*;
+import java.time.Instant;
 
 @Data
 @NoArgsConstructor
@@ -27,9 +28,17 @@ public class Capture {
     @JoinColumn(name="service_id")
     private Service service;
 
-    public Capture(CaptureRO captureRO, Service service) {
-        // TODO: start time, check that start time < end time
-        this.endTime = captureRO.getEndTime();
+    public Capture(CaptureRO captureRO, Service service) throws Exception {
+        Instant startTime = Instant.now();
+        Instant endTime = Instant.parse(captureRO.getEndTime());
+
+        if (endTime.isBefore(startTime)) {
+            throw new Exception("Cannot create capture, endTime " + endTime +
+                    " occurs before current time " + startTime + ".");
+        }
+
+        this.startTime = startTime.toString();
+        this.endTime = endTime.toString();
         this.status = CaptureStatus.IN_PROGRESS;
         this.service = service;
     }
