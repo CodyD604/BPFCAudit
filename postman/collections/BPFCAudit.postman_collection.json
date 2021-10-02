@@ -1,0 +1,209 @@
+{
+	"info": {
+		"_postman_id": "92770568-62ac-41ff-9bd8-1a7cc4f5c5aa",
+		"name": "BPFCAudit",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Service",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var json = pm.response.json();",
+							"",
+							"pm.environment.set(\"serviceId\", json.data.id);",
+							"",
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/vnd.api+json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.api+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"data\":{\n      \"type\": \"{{services}}\",\n      \"attributes\":{\n         \"name\": \"myService\"\n      }\n   }\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}/{{appName}}/{{api}}/{{v1}}/{{services}}",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"{{appName}}",
+						"{{api}}",
+						"{{v1}}",
+						"{{services}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Service",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{host}}/{{appName}}/{{api}}/{{v1}}/{{services}}/{{serviceId}}?included={{audits}}",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"{{appName}}",
+						"{{api}}",
+						"{{v1}}",
+						"{{services}}",
+						"{{serviceId}}"
+					],
+					"query": [
+						{
+							"key": "included",
+							"value": "{{audits}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Services",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{host}}/{{appName}}/{{api}}/{{v1}}/{{services}}?included={{audits}}",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"{{appName}}",
+						"{{api}}",
+						"{{v1}}",
+						"{{services}}"
+					],
+					"query": [
+						{
+							"key": "included",
+							"value": "{{audits}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Start Audit",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var json = pm.response.json();",
+							"",
+							"pm.environment.set(\"auditId\", json.data.id);",
+							"",
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var moment = require('moment');",
+							"",
+							"var endTime = moment.utc().add(1, 'minutes');",
+							"",
+							"pm.environment.set(\"auditEndTime\", endTime.toISOString());"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/vnd.api+json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/vnd.api+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n   \"data\":{\n      \"type\": \"{{audits}}\",\n      \"attributes\":{\n         \"endTime\": \"{{auditEndTime}}\",\n         \"serviceId\": {{serviceId}}\n      }\n   }\n}"
+				},
+				"url": {
+					"raw": "http://{{host}}/{{appName}}/{{api}}/{{v1}}/{{audits}}",
+					"protocol": "http",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"{{appName}}",
+						"{{api}}",
+						"{{v1}}",
+						"{{audits}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
