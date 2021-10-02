@@ -28,7 +28,7 @@ public class Service {
     private String name;
     @OneToMany(mappedBy = "service", fetch = FetchType.EAGER)
     @JsonIgnore
-    @JsonApiRelationships("captures")
-    private List<Capture> captures = new ArrayList<>();
+    @JsonApiRelationships("audits")
+    private List<Audit> audits = new ArrayList<>();
     // TODO: add policy name/id
 }

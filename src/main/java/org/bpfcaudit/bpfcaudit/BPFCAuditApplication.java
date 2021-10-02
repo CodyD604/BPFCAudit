@@ -6,9 +6,9 @@ import com.toedter.spring.hateoas.jsonapi.JsonApiError;
 import com.toedter.spring.hateoas.jsonapi.JsonApiErrors;
 import org.bpfcaudit.bpfcaudit.api.jsonapi.JSONAPIException;
 import org.bpfcaudit.bpfcaudit.auditor.AuditWorker;
-import org.bpfcaudit.bpfcaudit.dal.CaptureRepository;
-import org.bpfcaudit.bpfcaudit.model.Capture;
-import org.bpfcaudit.bpfcaudit.model.CaptureStatus;
+import org.bpfcaudit.bpfcaudit.dal.AuditRepository;
+import org.bpfcaudit.bpfcaudit.model.Audit;
+import org.bpfcaudit.bpfcaudit.model.AuditStatus;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -32,21 +31,19 @@ public class BPFCAuditApplication implements WebMvcConfigurer {
 	}
 
 	@Bean
-	public CommandLineRunner bpfcaudit(AuditWorker auditWorker, CaptureRepository captureRepository) throws ExecutionException, InterruptedException {
+	public CommandLineRunner bpfcaudit(AuditRepository auditRepository) throws ExecutionException, InterruptedException {
 		// TODO: Should this block? Does this run before APIs can be hit?
-		// Clean up dangling captures
-		CompletableFuture<List<Capture>> captureFuture = captureRepository.findByStatus(CaptureStatus.IN_PROGRESS);
-
-		captureFuture.handle((List<Capture> captures, Throwable t) -> {
-			for (Capture capture: captures) {
-				capture.setFailure("Process terminated before capture completion.");
-			}
-			captureRepository.saveAll(captures);
-			return null;
-		});
-
 		return (args) -> {
-			auditWorker.run();
+			// Clean up dangling audits
+			CompletableFuture<List<Audit>> auditFuture = auditRepository.findByStatus(AuditStatus.IN_PROGRESS);
+
+			auditFuture.handle((List<Audit> audits, Throwable t) -> {
+				for (Audit audit : audits) {
+					audit.setFailure("Process terminated before audit completion.");
+				}
+				auditRepository.saveAll(audits);
+				return null;
+			});
 		};
 	}
 

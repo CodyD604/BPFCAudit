@@ -1,6 +1,6 @@
 package org.bpfcaudit.bpfcaudit.model;
 
-import org.bpfcaudit.bpfcaudit.model.pojo.Audit;
+import org.bpfcaudit.bpfcaudit.model.pojo.AuditEvent;
 import org.bpfcaudit.bpfcaudit.model.pojo.Result;
 
 import javax.persistence.*;
@@ -23,7 +23,7 @@ public class Rule {
     public String ruleName;
     public int policyLine;
 
-    public Rule(Audit auditPOJO, String serviceName) {
+    public Rule(AuditEvent auditPOJO, String serviceName) {
         Result result = auditPOJO.result;
         this.containerId = result.containerId;
         this.decision = result.decision;

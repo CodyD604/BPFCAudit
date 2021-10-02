@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class CaptureRO {
+public class AuditRO {
     private Long id;
     @JsonProperty(required = true)
     private String endTime;

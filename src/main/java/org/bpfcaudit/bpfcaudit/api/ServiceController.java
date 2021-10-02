@@ -22,7 +22,7 @@ import java.util.stream.StreamSupport;
 import static com.toedter.spring.hateoas.jsonapi.JsonApiModelBuilder.jsonApiModel;
 import static com.toedter.spring.hateoas.jsonapi.MediaTypes.JSON_API_VALUE;
 import static org.bpfcaudit.bpfcaudit.model.Service.SERVICES;
-import static org.bpfcaudit.bpfcaudit.model.Capture.CAPTURES;
+import static org.bpfcaudit.bpfcaudit.model.Audit.AUDITS;
 
 @RestController
 @RequestMapping(value = ApiPath.API_BASE_PATH, produces = JSON_API_VALUE)
@@ -62,9 +62,9 @@ public class ServiceController {
 
         if (included != null) {
             List<String> includedList = Arrays.asList(included);
-            if (includedList.contains(CAPTURES)) {
+            if (includedList.contains(AUDITS)) {
                 for (Service service : pagedResult.getContent()) {
-                    jsonApiModelBuilder.included(service.getCaptures());
+                    jsonApiModelBuilder.included(service.getAudits());
                 }
             }
         }
@@ -90,8 +90,8 @@ public class ServiceController {
 
         if (included != null) {
             List<String> includedList = Arrays.asList(included);
-            if (includedList.contains(CAPTURES)) {
-                jsonApiModelBuilder.included(service.getCaptures());
+            if (includedList.contains(AUDITS)) {
+                jsonApiModelBuilder.included(service.getAudits());
             }
         }
 

@@ -1,6 +1,6 @@
 package org.bpfcaudit.bpfcaudit.model;
 
-public enum CaptureStatus {
+public enum AuditStatus {
     IN_PROGRESS,
     SUCCESSFUL,
     FAILED

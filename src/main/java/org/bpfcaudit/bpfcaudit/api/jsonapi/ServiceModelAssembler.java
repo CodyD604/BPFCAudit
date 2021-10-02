@@ -6,14 +6,14 @@ import org.springframework.hateoas.RepresentationModel;
 import org.springframework.stereotype.Component;
 
 import static com.toedter.spring.hateoas.jsonapi.JsonApiModelBuilder.jsonApiModel;
-import static org.bpfcaudit.bpfcaudit.model.Capture.CAPTURES;
+import static org.bpfcaudit.bpfcaudit.model.Audit.AUDITS;
 
 @Component
 public class ServiceModelAssembler {
     public RepresentationModel<?> toJsonApiModel(Service service) {
         JsonApiModelBuilder builder = jsonApiModel()
                 .model(service)
-                .relationship(CAPTURES, service.getCaptures());
+                .relationship(AUDITS, service.getAudits());
 
         return builder.build();
     }

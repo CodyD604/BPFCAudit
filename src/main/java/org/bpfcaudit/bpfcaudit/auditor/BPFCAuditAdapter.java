@@ -7,32 +7,25 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 import org.asynchttpclient.ws.WebSocket;
 import org.asynchttpclient.ws.WebSocketListener;
-import org.bpfcaudit.bpfcaudit.dal.RuleRepository;
-import org.bpfcaudit.bpfcaudit.model.Rule;
-import org.bpfcaudit.bpfcaudit.model.pojo.Audit;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.bpfcaudit.bpfcaudit.model.pojo.AuditEvent;
 
 import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.LongAdder;
 
-@Component
 public class BPFCAuditAdapter implements WebSocketListener {
-    @Autowired
-    public RuleRepository repository;
-
     private String subscriptionRequestId;
     private long subscriptionId;
     private WebSocket websocket;
     private static final ThreadLocal<ObjectMapper> objectMapper = ThreadLocal.withInitial(ObjectMapper::new);
-    public final BlockingQueue<Rule> eventQueue;
+    private final ConcurrentHashMap<Integer, LongAdder> ruleHashToRuleCount;
+    private final Integer tempHash = 2;
 
-    public BPFCAuditAdapter() {
-        this.eventQueue = new LinkedBlockingDeque<>();
+    public BPFCAuditAdapter(ConcurrentHashMap<Integer, LongAdder> ruleHashToRuleCount) {
+        this.ruleHashToRuleCount = ruleHashToRuleCount;
     }
 
     @Override
@@ -56,20 +49,17 @@ public class BPFCAuditAdapter implements WebSocketListener {
 
     @Override
     public void onTextFrame(String payload, boolean finalFragment, int rsv) {
-        System.out.println(payload);
         try {
             JSONRPC2Message msg = JSONRPC2Message.parse(payload);
 
             if (msg instanceof JSONRPC2Notification) {
                 Map<String, Object> namedParams = ((JSONRPC2Notification) msg).getNamedParams();
-                Audit audit = objectMapper.get().convertValue(namedParams, Audit.class);
-                Rule event = new Rule(audit, "fileAccessor");
-                repository.save(event);
+                AuditEvent audit = objectMapper.get().convertValue(namedParams, AuditEvent.class);
+                ruleHashToRuleCount.computeIfAbsent(tempHash, k -> new LongAdder()).increment();
             } else if (msg instanceof JSONRPC2Response
                     && subscriptionRequestId.equals(((JSONRPC2Response) msg).getID())) {
                 subscriptionId = (long)((JSONRPC2Response) msg).getResult();
                 System.out.println("Saved subscription id: " + subscriptionId);
-                System.out.println("Total saved events: " + repository.count());
             }
         } catch (Throwable e) {
             e.printStackTrace();
@@ -80,7 +70,6 @@ public class BPFCAuditAdapter implements WebSocketListener {
     @PreDestroy
     public void onDestroy() {
         System.out.println("Sending audit unsubscribe message...");
-
         JSONRPC2Request unsubscribeRequest = new JSONRPC2Request("audit_unsubscribe", List.of(subscriptionId),
                 UUID.randomUUID().toString());
         websocket.sendTextFrame(unsubscribeRequest.toJSONString());

@@ -5,7 +5,7 @@ import lombok.ToString;
 
 @EqualsAndHashCode
 @ToString
-public class Audit {
+public class AuditEvent {
     public Result result;
     public long subscription;
 }
