@@ -9,12 +9,14 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 import org.asynchttpclient.ws.WebSocket;
 import org.asynchttpclient.ws.WebSocketListener;
 import org.bpfcaudit.bpfcaudit.model.pojo.AuditEvent;
+import org.bpfcaudit.bpfcaudit.model.pojo.AuditStats;
 import org.bpfcaudit.bpfcaudit.model.pojo.Result;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 public class BPFCAuditAdapter implements WebSocketListener {
@@ -25,6 +27,8 @@ public class BPFCAuditAdapter implements WebSocketListener {
             .withInitial(() -> new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
     private final ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount;
     private final ConcurrentHashMap<Long, Result> ruleHashToResult;
+    private AuditStats auditStats;
+    private final Long auditStatsRequestId = 9999L; // This is good enough for testing, should never be more than a few subscriptions
 
     public BPFCAuditAdapter(ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount, ConcurrentHashMap<Long, Result> ruleHashToResult) {
         this.ruleHashToRuleCount = ruleHashToRuleCount;
@@ -72,22 +76,34 @@ public class BPFCAuditAdapter implements WebSocketListener {
                         return audit.result;
                     });
                 }
-            } else if (msg instanceof JSONRPC2Response
-                    && subscriptionRequestId.equals(((JSONRPC2Response) msg).getID())) {
-                subscriptionId = (long)((JSONRPC2Response) msg).getResult();
+            } else if (msg instanceof JSONRPC2Response) {
+                JSONRPC2Response response = (JSONRPC2Response) msg;
+                if (subscriptionRequestId.equals(response.getID())) {
+                    subscriptionId = (long) response.getResult();
+                } else if (auditStatsRequestId.equals(response.getID())) {
+                    auditStats = objectMapper.get().convertValue(response.getResult(), AuditStats.class);
+                }
             }
         } catch (Throwable e) {
             e.printStackTrace();
         }
     }
 
-    public void onAuditCompletion() throws InterruptedException {
+    public AuditStats onAuditCompletion() throws InterruptedException {
         JSONRPC2Request unsubscribeRequest = new JSONRPC2Request("audit_unsubscribe", List.of(subscriptionId),
                 UUID.randomUUID().toString());
+
+        // Audit stats are a global count, so there is no need to provide an id
+        JSONRPC2Request auditStatsRequest = new JSONRPC2Request("audit_stats", auditStatsRequestId);
         // TODO: should block here?
         if (websocket != null && websocket.isOpen()) {
-            websocket.sendTextFrame(unsubscribeRequest.toJSONString()).await();
+            websocket.sendTextFrame(auditStatsRequest.toJSONString());
+            // Wait a few seconds so that BPFContain has time to receive and send back the response for our stats request
+            TimeUnit.SECONDS.sleep(3);
+            websocket.sendTextFrame(unsubscribeRequest.toJSONString());
             websocket.sendCloseFrame();
         }
+
+        return auditStats;
     }
 }
