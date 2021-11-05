@@ -23,12 +23,10 @@ public class BPFCAuditAdapter implements WebSocketListener {
     private WebSocket websocket;
     private static final ThreadLocal<ObjectMapper> objectMapper = ThreadLocal
             .withInitial(() -> new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
-    private final ConcurrentHashMap<Integer, LongAdder> ruleHashToRuleCount;
-    private final ConcurrentHashMap<Integer, Result> ruleHashToResult;
-    // TODO: remove once rule hashes are implemented
-    private final Integer tempHash = 2;
+    private final ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount;
+    private final ConcurrentHashMap<Long, Result> ruleHashToResult;
 
-    public BPFCAuditAdapter(ConcurrentHashMap<Integer, LongAdder> ruleHashToRuleCount, ConcurrentHashMap<Integer, Result> ruleHashToResult) {
+    public BPFCAuditAdapter(ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount, ConcurrentHashMap<Long, Result> ruleHashToResult) {
         this.ruleHashToRuleCount = ruleHashToRuleCount;
         this.ruleHashToResult = ruleHashToResult;
     }
@@ -62,10 +60,18 @@ public class BPFCAuditAdapter implements WebSocketListener {
 
             if (msg instanceof JSONRPC2Notification) {
                 Map<String, Object> namedParams = ((JSONRPC2Notification) msg).getNamedParams();
-                AuditEvent audit = objectMapper.get().convertValue(namedParams, AuditEvent.class);
 
-                ruleHashToRuleCount.computeIfAbsent(tempHash, k -> new LongAdder()).increment();
-                ruleHashToResult.computeIfAbsent(tempHash, k -> audit.result);
+                // TODO: remove once rule hashes are implemented on BPFContain side. Let subscription act as our hash value for now.
+                Long hash = (Long) namedParams.getOrDefault("subscription", null);
+
+                if (hash != null) {
+                    ruleHashToRuleCount.computeIfAbsent(hash, k -> new LongAdder()).increment();
+                    ruleHashToResult.computeIfAbsent(hash, k -> {
+                        // Note: objectMapper's reflection is expensive, so we want to do this as little as possible
+                        AuditEvent audit = objectMapper.get().convertValue(namedParams, AuditEvent.class);
+                        return audit.result;
+                    });
+                }
             } else if (msg instanceof JSONRPC2Response
                     && subscriptionRequestId.equals(((JSONRPC2Response) msg).getID())) {
                 subscriptionId = (long)((JSONRPC2Response) msg).getResult();

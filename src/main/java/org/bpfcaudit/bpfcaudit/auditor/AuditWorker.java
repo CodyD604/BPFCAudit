@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.LongAdder;
 public class AuditWorker implements Runnable {
     private final RuleRepository ruleRepository;
     private final AuditRepository auditRepository;
-    private final ConcurrentHashMap<Integer, LongAdder> ruleHashToRuleCount = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Integer, Result> ruleHashToResults = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Result> ruleHashToResults = new ConcurrentHashMap<>();
     private BPFCAuditAdapter bpfcAuditAdapter;
     private final long auditId;
 
@@ -53,7 +53,14 @@ public class AuditWorker implements Runnable {
     public void onAuditCompletion() throws InterruptedException {
         // Send unsub message and close socket
         bpfcAuditAdapter.onAuditCompletion();
-        System.out.println("Captured " + ruleHashToRuleCount.get(2) + " events.");
+
+        // TODO: proper logging
+        // Log how many audit events were captured
+        long totalEvents = 0;
+        for (Long ruleHash : this.ruleHashToRuleCount.keySet()) {
+            totalEvents += this.ruleHashToRuleCount.get(ruleHash).longValue();
+        }
+        System.out.println("Captured " + totalEvents + " events.");
     }
 
     // TODO: async
@@ -70,7 +77,7 @@ public class AuditWorker implements Runnable {
 
             // Persist audit data
             List<Rule> rules = new ArrayList<>(this.ruleHashToResults.keySet().size());
-            for (Integer ruleHash : this.ruleHashToResults.keySet()) {
+            for (Long ruleHash : this.ruleHashToResults.keySet()) {
                 rules.add(new Rule(this.ruleHashToResults.get(ruleHash),
                         this.ruleHashToRuleCount.get(ruleHash).longValue(), audit));
             }
