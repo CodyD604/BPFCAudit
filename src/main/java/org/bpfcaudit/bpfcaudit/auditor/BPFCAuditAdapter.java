@@ -60,6 +60,7 @@ public class BPFCAuditAdapter implements WebSocketListener {
 
             if (msg instanceof JSONRPC2Notification) {
                 Map<String, Object> namedParams = ((JSONRPC2Notification) msg).getNamedParams();
+                AuditEvent audit = objectMapper.get().convertValue(namedParams, AuditEvent.class);
 
                 // TODO: remove once rule hashes are implemented on BPFContain side. Let subscription act as our hash value for now.
                 Long hash = (Long) namedParams.getOrDefault("subscription", null);
@@ -68,7 +69,6 @@ public class BPFCAuditAdapter implements WebSocketListener {
                     ruleHashToRuleCount.computeIfAbsent(hash, k -> new LongAdder()).increment();
                     ruleHashToResult.computeIfAbsent(hash, k -> {
                         // Note: objectMapper's reflection is expensive, so we want to do this as little as possible
-                        AuditEvent audit = objectMapper.get().convertValue(namedParams, AuditEvent.class);
                         return audit.result;
                     });
                 }
