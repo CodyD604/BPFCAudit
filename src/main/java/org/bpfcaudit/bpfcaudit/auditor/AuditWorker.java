@@ -3,6 +3,7 @@ package org.bpfcaudit.bpfcaudit.auditor;
 import org.asynchttpclient.Dsl;
 import org.asynchttpclient.ws.WebSocketUpgradeHandler;
 import org.bpfcaudit.bpfcaudit.dal.AuditRepository;
+import org.bpfcaudit.bpfcaudit.dal.OldRuleRepository;
 import org.bpfcaudit.bpfcaudit.dal.RuleRepository;
 import org.bpfcaudit.bpfcaudit.model.Audit;
 import org.bpfcaudit.bpfcaudit.model.AuditStatus;
@@ -20,20 +21,22 @@ import java.util.concurrent.atomic.LongAdder;
 public class AuditWorker implements Runnable {
     private final RuleRepository ruleRepository;
     private final AuditRepository auditRepository;
+    private final OldRuleRepository oldRuleRepository;
     private final ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, Result> ruleHashToResults = new ConcurrentHashMap<>();
     private BPFCAuditAdapter bpfcAuditAdapter;
     private final long auditId;
 
-    public AuditWorker(Long auditId, RuleRepository ruleRepository, AuditRepository auditRepository) {
+    public AuditWorker(Long auditId, RuleRepository ruleRepository, AuditRepository auditRepository, OldRuleRepository oldRuleRepository) {
         this.auditId = auditId;
         this.ruleRepository = ruleRepository;
         this.auditRepository = auditRepository;
+        this.oldRuleRepository = oldRuleRepository;
     }
 
     @Override
     public void run() {
-        bpfcAuditAdapter = new BPFCAuditAdapter(ruleHashToRuleCount, ruleHashToResults);
+        bpfcAuditAdapter = new BPFCAuditAdapter(ruleHashToRuleCount, ruleHashToResults, this.oldRuleRepository);
         WebSocketUpgradeHandler.Builder upgradeHandlerBuilder = new WebSocketUpgradeHandler.Builder();
         WebSocketUpgradeHandler wsHandler = upgradeHandlerBuilder.addWebSocketListener(bpfcAuditAdapter).build();
 
@@ -56,11 +59,13 @@ public class AuditWorker implements Runnable {
 
         // TODO: proper logging
         // Log how many audit events were captured
+        /*
         long totalEvents = 0;
         for (Long ruleHash : this.ruleHashToRuleCount.keySet()) {
             totalEvents += this.ruleHashToRuleCount.get(ruleHash).longValue();
         }
-        System.out.println("Captured " + totalEvents + " events.");
+         */
+        System.out.println("Captured " + oldRuleRepository.count() + " events.");
     }
 
     // TODO: async

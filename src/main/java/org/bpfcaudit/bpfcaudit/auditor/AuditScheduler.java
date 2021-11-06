@@ -1,6 +1,7 @@
 package org.bpfcaudit.bpfcaudit.auditor;
 
 import org.bpfcaudit.bpfcaudit.dal.AuditRepository;
+import org.bpfcaudit.bpfcaudit.dal.OldRuleRepository;
 import org.bpfcaudit.bpfcaudit.dal.RuleRepository;
 import org.bpfcaudit.bpfcaudit.model.Audit;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,8 @@ public class AuditScheduler {
     private RuleRepository ruleRepository;
     @Autowired
     private AuditRepository auditRepository;
+    @Autowired
+    private OldRuleRepository oldRuleRepository;
 
     // TODO: test and handle running multiple audits at once
     public void InitiateAudit(Audit audit) throws Exception {
@@ -42,7 +45,7 @@ public class AuditScheduler {
         }
         serviceIdsWithRunningAudit.add(serviceId);
 
-        final AuditWorker auditWorker = new AuditWorker(audit.getId(), this.ruleRepository, this.auditRepository);
+        final AuditWorker auditWorker = new AuditWorker(audit.getId(), this.ruleRepository, this.auditRepository, this.oldRuleRepository);
         Future<?> auditWorkerFuture = scheduler.submit(auditWorker);
 
         long timeToRun = Math.max(1, Instant.parse(audit.getEndTime())

@@ -8,6 +8,8 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 import org.asynchttpclient.ws.WebSocket;
 import org.asynchttpclient.ws.WebSocketListener;
+import org.bpfcaudit.bpfcaudit.dal.OldRuleRepository;
+import org.bpfcaudit.bpfcaudit.model.OldRule;
 import org.bpfcaudit.bpfcaudit.model.pojo.AuditEvent;
 import org.bpfcaudit.bpfcaudit.model.pojo.Result;
 
@@ -25,10 +27,12 @@ public class BPFCAuditAdapter implements WebSocketListener {
             .withInitial(() -> new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
     private final ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount;
     private final ConcurrentHashMap<Long, Result> ruleHashToResult;
+    public OldRuleRepository repository;
 
-    public BPFCAuditAdapter(ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount, ConcurrentHashMap<Long, Result> ruleHashToResult) {
+    public BPFCAuditAdapter(ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount, ConcurrentHashMap<Long, Result> ruleHashToResult, OldRuleRepository oldRuleRepository) {
         this.ruleHashToRuleCount = ruleHashToRuleCount;
         this.ruleHashToResult = ruleHashToResult;
+        this.repository = oldRuleRepository;
     }
 
     @Override
@@ -61,17 +65,8 @@ public class BPFCAuditAdapter implements WebSocketListener {
             if (msg instanceof JSONRPC2Notification) {
                 Map<String, Object> namedParams = ((JSONRPC2Notification) msg).getNamedParams();
                 AuditEvent audit = objectMapper.get().convertValue(namedParams, AuditEvent.class);
-
-                // TODO: remove once rule hashes are implemented on BPFContain side. Let subscription act as our hash value for now.
-                Long hash = (Long) namedParams.getOrDefault("subscription", null);
-
-                if (hash != null) {
-                    ruleHashToRuleCount.computeIfAbsent(hash, k -> new LongAdder()).increment();
-                    ruleHashToResult.computeIfAbsent(hash, k -> {
-                        // Note: objectMapper's reflection is expensive, so we want to do this as little as possible
-                        return audit.result;
-                    });
-                }
+                OldRule event = new OldRule(audit.result, "123", "myService");
+                repository.save(event);
             } else if (msg instanceof JSONRPC2Response
                     && subscriptionRequestId.equals(((JSONRPC2Response) msg).getID())) {
                 subscriptionId = (long)((JSONRPC2Response) msg).getResult();
