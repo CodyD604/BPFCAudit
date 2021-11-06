@@ -7,7 +7,6 @@ import org.bpfcaudit.bpfcaudit.dal.RuleRepository;
 import org.bpfcaudit.bpfcaudit.model.Audit;
 import org.bpfcaudit.bpfcaudit.model.AuditStatus;
 import org.bpfcaudit.bpfcaudit.model.Rule;
-import org.bpfcaudit.bpfcaudit.model.pojo.AuditStats;
 import org.bpfcaudit.bpfcaudit.model.pojo.Result;
 
 import java.util.ArrayList;
@@ -52,8 +51,8 @@ public class AuditWorker implements Runnable {
     }
 
     public void onAuditCompletion() throws InterruptedException {
-        // Send unsub message and close socket, get stats
-        AuditStats auditStats = bpfcAuditAdapter.onAuditCompletion();
+        // Send unsub message and close socket
+        bpfcAuditAdapter.onAuditCompletion();
 
         // TODO: proper logging
         // Log how many audit events were captured
@@ -61,14 +60,7 @@ public class AuditWorker implements Runnable {
         for (Long ruleHash : this.ruleHashToRuleCount.keySet()) {
             totalEvents += this.ruleHashToRuleCount.get(ruleHash).longValue();
         }
-
-        System.out.println("BPFContain processed " + auditStats.events_processed + " events.");
-        if (totalEvents != 0) {
-            float captureRate = (100 * (float)totalEvents) / auditStats.events_processed;
-            System.out.printf("Captured %d events for a capture rate of %.2f%%.%n", totalEvents, captureRate);
-        } else {
-            System.out.println("Captured 0 events.");
-        }
+        System.out.println("Captured " + totalEvents + " events.");
     }
 
     // TODO: async
