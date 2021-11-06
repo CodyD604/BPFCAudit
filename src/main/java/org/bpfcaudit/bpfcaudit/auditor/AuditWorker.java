@@ -63,7 +63,7 @@ public class AuditWorker implements Runnable {
         }
 
         System.out.println("BPFContain processed " + auditStats.events_processed + " events.");
-        if (auditStats.events_processed != 0) {
+        if (totalEvents != 0) {
             float captureRate = (100 * (float)totalEvents) / auditStats.events_processed;
             System.out.printf("Captured %d events for a capture rate of %.2f%%.%n", totalEvents, captureRate);
         } else {
