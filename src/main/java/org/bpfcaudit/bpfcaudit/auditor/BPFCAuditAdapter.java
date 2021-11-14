@@ -27,6 +27,8 @@ public class BPFCAuditAdapter implements WebSocketListener {
             .withInitial(() -> new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
     private final ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount;
     private final ConcurrentHashMap<Long, Result> ruleHashToResult;
+    private final LongAdder rulesFoundCount = new LongAdder();
+    private static final int FLUSH_EVERY = 1000; // Flush every 1000 events
     public OldRuleRepository repository;
 
     public BPFCAuditAdapter(ConcurrentHashMap<Long, LongAdder> ruleHashToRuleCount, ConcurrentHashMap<Long, Result> ruleHashToResult, OldRuleRepository oldRuleRepository) {
@@ -59,6 +61,9 @@ public class BPFCAuditAdapter implements WebSocketListener {
 
     @Override
     public void onTextFrame(String payload, boolean finalFragment, int rsv) {
+        rulesFoundCount.increment();
+        if (rulesFoundCount.intValue() % 1000 == 0) repository.flush();
+
         try {
             JSONRPC2Message msg = JSONRPC2Message.parse(payload);
 
@@ -79,6 +84,7 @@ public class BPFCAuditAdapter implements WebSocketListener {
     public void onAuditCompletion() throws InterruptedException {
         JSONRPC2Request unsubscribeRequest = new JSONRPC2Request("audit_unsubscribe", List.of(subscriptionId),
                 UUID.randomUUID().toString());
+        repository.flush();
         // TODO: should block here?
         if (websocket != null && websocket.isOpen()) {
             websocket.sendTextFrame(unsubscribeRequest.toJSONString()).await();
