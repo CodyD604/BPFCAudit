@@ -37,7 +37,7 @@ public class ServiceController {
     public ResponseEntity<RepresentationModel<?>> findAll(
         @RequestParam(value = "page[number]", defaultValue = "0", required = false) int page,
         @RequestParam(value = "page[size]", defaultValue = "25", required = false) int size,
-        @RequestParam(value = "included", required = false) String[] included
+        @RequestParam(value = "include", required = false) String[] include
     ) {
         final PageRequest pageRequest = PageRequest.of(page, size);
 
@@ -60,9 +60,9 @@ public class ServiceController {
 
         final JsonApiModelBuilder jsonApiModelBuilder = jsonApiModel().model(pagedModel);
 
-        if (included != null) {
-            List<String> includedList = Arrays.asList(included);
-            if (includedList.contains(AUDITS)) {
+        if (include != null) {
+            List<String> includeList = Arrays.asList(include);
+            if (includeList.contains(AUDITS)) {
                 for (Service service : pagedResult.getContent()) {
                     jsonApiModelBuilder.included(service.getAudits());
                 }
@@ -78,7 +78,7 @@ public class ServiceController {
     @GetMapping("/" + ApiPath.V1 + "/" + SERVICES + "/{id}")
     public ResponseEntity<? extends RepresentationModel<?>> findOne(
             @PathVariable Long id,
-            @RequestParam(value = "included", required = false) String[] included
+            @RequestParam(value = "include", required = false) String[] include
     ) {
         Optional<Service> serviceWrapped = repository.findById(id);
         if (serviceWrapped.isEmpty()) return ResponseEntity.notFound().build();
@@ -88,9 +88,9 @@ public class ServiceController {
 
         final JsonApiModelBuilder jsonApiModelBuilder = jsonApiModel().model(serviceModel);
 
-        if (included != null) {
-            List<String> includedList = Arrays.asList(included);
-            if (includedList.contains(AUDITS)) {
+        if (include != null) {
+            List<String> includeList = Arrays.asList(include);
+            if (includeList.contains(AUDITS)) {
                 jsonApiModelBuilder.included(service.getAudits());
             }
         }
