@@ -37,10 +37,13 @@ public class AuditScheduler {
         Long serviceId = audit.getService().getId();
         // TODO: find a better way to enforce this invariant. As is is a race condition. Need something atomic.
         // Though there should be no ill consequences of multiple running captures for the same service.
-        if (serviceIdsWithRunningAudit.contains(serviceId)) {
-            throw new Exception("Audit already in progress for service " + serviceId + ".");
+        // TEMP: only allow one audit to run at a time
+        synchronized (this) {
+            if (serviceIdsWithRunningAudit.size() > 0) {
+                throw new Exception("Audit already in progress.");
+            }
+            serviceIdsWithRunningAudit.add(serviceId);
         }
-        serviceIdsWithRunningAudit.add(serviceId);
 
         final AuditWorker auditWorker = new AuditWorker(audit.getId(), this.ruleRepository, this.auditRepository);
         Future<?> auditWorkerFuture = scheduler.submit(auditWorker);
